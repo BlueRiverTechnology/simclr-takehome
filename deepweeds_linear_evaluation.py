@@ -11,8 +11,8 @@ import torchvision
 from tqdm import tqdm
 from itertools import product
 
-from simclr.modules import LogisticRegression, get_resnet
-from ff_linear_evaluation import get_loaders, train
+from simclr.modules import LogisticRegression
+
 
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 # from DeepWeeds
@@ -28,6 +28,25 @@ CLASS_NAMES = ['Chinee Apple',
                'Negatives']
 classes = dict(zip(CLASSES, CLASS_NAMES))
 
+
+
+def train(loader, model, criterion, optimizer):
+    loss_epoch = 0
+    accuracy_epoch = 0
+    for step, (x, y) in enumerate(loader):
+        optimizer.zero_grad()
+
+        output = model(x)
+        loss = criterion(output, y)
+
+        predicted = output.argmax(1)
+        acc = (predicted == y).sum().item() / y.size(0)
+        accuracy_epoch += acc
+
+        loss.backward()
+        optimizer.step()
+        loss_epoch += loss.item()
+    return loss_epoch, accuracy_epoch
 
 
 def test(loader, model, criterion, optimizer):
@@ -111,8 +130,8 @@ def train_test(n_features, train_loader, val_loader, test_loader, logistic_epoch
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="SimCLR")
-    parser.add_argument("--feature_dir", type=Path, default=Path("datasets/ft-deepweed_binary"))
-    parser.add_argument("--output_dir", type=Path, default=Path("results"))
+    parser.add_argument("feature_dir", type=Path)
+    parser.add_argument("output_dir", type=Path)
     parser.add_argument("--epochs", type=int, default=200)
     parser.add_argument("--batch_sizes", type=int, nargs="+", default=[16, 32, 64, 128, 256, 512, 1024])
     
@@ -129,14 +148,14 @@ if __name__ == "__main__":
     results = []
     epochs = args.epochs
     for batch_size, replicate, feature_class in tqdm(list(product(args.batch_sizes, range(5), ("H", "Z1")))):
-        out_path_stem = f"results/{feature_class}_bs{batch_size}_repl{replicate}"
+        out_path_stem = f"softmax_{feature_class}_bs{batch_size}_repl{replicate}"
         # print(out_path_stem)
         train_loader, val_loader, test_loader, n_features = get_loaders(
             feature_dir, feature_class, replicate, batch_size=batch_size, random_state=1, device=device
         )
         ft_results, oo = train_test(n_features, train_loader, val_loader, test_loader, logistic_epochs=epochs, device=device, n_classes=len(CLASSES))
         results.append(pd.DataFrame(ft_results).assign(feature=feature_class, batch_size=batch_size, replicate=replicate))
-        np.save(f"{out_path_stem}.npy", oo)
+        np.save(args.output_dir / f"{out_path_stem}.npy", oo)
 
 
     pd.concat(results).to_csv(str(args.output_dir / "results.csv"), index=False)
