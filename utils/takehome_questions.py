@@ -1,6 +1,4 @@
-import random
-import matplotlib.pyplot as plt
-import pandas as pd
+# TODO: Import necessary modules
 from torch.utils.data import Dataset
 from torchvision.datasets.folder import default_loader  # use to load an image from disk
 
@@ -15,7 +13,7 @@ CLASS_NAMES = ['Chinee Apple',
                'Snake Weed',
                'Negatives']
 
-
+# TODO: Update DWDataset to load images and labels from the dataset
 class DWDataset(Dataset):
     def __init__(self, ds_root_folder: str, labels_key: str="test_subset0", transforms=None):
         """
@@ -26,22 +24,12 @@ class DWDataset(Dataset):
             labels_key (str): Optional stem of the CSV file containing labels.
             transforms: Optional transforms to apply to images.
         """
-        super(DWDataset).__init__()
-        self.labels_path =  f"{ds_root_folder}/labels/{labels_key}.csv"
-        self.images_folder = f"{ds_root_folder}/images"
-        self.labels = pd.read_csv(self.labels_path)
-        self.transforms = transforms
-
+        pass
     def __len__(self):
-        return self.labels.shape[0]
+        pass
 
     def __getitem__(self, idx):
-        row = self.labels.iloc[idx]
-        img = default_loader(f"{self.images_folder}/{row.Filename}")
-        if self.transforms is None:
-            return img, row.Label
-        return self.transforms(img), row.Label
-
+        pass
 
 # TODO: Update display_images to plot a subset of images and display their labels
 def display_images(dataset: DWDataset, num_images: int = 4):
@@ -52,16 +40,4 @@ def display_images(dataset: DWDataset, num_images: int = 4):
         dataset: DWDataset instance
         num_images: Number of random images to display
     """
-    random_idx = random.sample(range(len(dataset)), num_images)
-
-    fig, axes = plt.subplots(1, num_images, figsize=(20, 4))
-    if num_images == 1:
-        axes = [axes]
-
-    for ax, idx in zip(axes, random_idx):
-        img, label = dataset[idx]
-        ax.imshow(img)
-        ax.set_title(f"Label: {CLASS_NAMES[label]}", fontsize=10)
-        ax.axis('off')
-
-    plt.tight_layout()
+    pass
